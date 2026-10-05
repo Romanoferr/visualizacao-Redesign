@@ -77,3 +77,46 @@ body {
 .placeholder {
   color: var(--muted);
 }
+
+/* Imagem original — ocupa o máximo da coluna do caso. */
+.original-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+}
+
+/* Tabela de prova do DuckDB. */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.data-table thead th {
+  background: #f5f5f5;
+}
+
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.duck-ok {
+  color: #1a7f37;
+  margin: 4px 0;
+}
+
+.duck-err {
+  color: #b42318;
+}

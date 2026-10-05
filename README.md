@@ -10,22 +10,20 @@ Pré-requisito: Node e npm.
 ```bash
 npm install
 npm run dev      # servidor local (http://localhost:5173)
-npm run build    # tsc + build de produção (gera dist/)
-npm run preview  # serve o build de produção localmente
 ```
 
 ## Estrutura
 
 ```text
 src/
-├── main.ts               # monta header + abas + área de conteúdo
+├── main.ts      
 ├── components/Tabs.ts    # troca de abas (limpa o container a cada troca)
 ├── cases/
 │   ├── case-1/index.ts, Original.ts, DesignA.ts, DesignB.ts, data/
-│   ├── case-2/...        # independente do caso 1
+│   ├── case-2/...        # independente dos demais
 │   └── case-3/...        # independente dos demais
 ├── styles/main.css
-└── utils/duckdb-extension.ts  # ponto de extensão do DuckDB (não implementado)
+└── utils/duckdb-extension.ts
 ```
 
 ## Como implementar uma visualização
@@ -53,25 +51,12 @@ Regras:
    não desenhar fora do `target`.
 5. Coloque CSV/JSON reais em `src/cases/case-N/data/`.
 
-Exemplo de esqueleto com D3 (após `npm install d3`):
-
-```ts
-import * as d3 from "d3";
-
-export function renderDesignA1(target: HTMLElement): void {
-  target.innerHTML = `<h3>Design A</h3>`;
-  const svg = d3.select(target).append("svg")
-    .attr("width", 600)
-    .attr("height", 400);
-  // ... desenhe aqui
-}
-```
 
 ## DuckDB
 
-Ainda não integrado (ver `src/utils/duckdb-extension.ts`). Quando for usar:
+DuckDB real no browser via `@duckdb/duckdb-wasm` (bundle MVP, sem COOP/COEP).
 
-1. Adicione os CSV/JSON em `src/cases/case-N/data/`.
-2. Instale a variante browser: `npm install @duckdb/duckdb-wasm`
-   (o pacote `duckdb` nativo é só para Node, não serve a esta SPA).
-3. Implemente a carga/consulta real e chame-a a partir do `index.ts` do caso.
+* `src/utils/duckdb.ts` - reutilizável: `getConnection()`, `execute(sql)`, `queryRows<T>(sql)` e `registerTableFromObjects(tabela, linhas, colunas)`. Cada caso usa sua própria tabela (ex: `case1_approval`).
+* `src/cases/case-1/case1-data.ts` - baixa o `.xlsx` (servido pelo Vite), parseia com `xlsx`.
+* `src/cases/case-1/DataTable.ts` - renderiza a tabela na aba do caso a partir do resultado do SQL, provando que o DuckDB está consultando de verdade.
+

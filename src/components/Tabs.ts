@@ -1,7 +1,5 @@
 // Navegacao por abas: propositalmente simples, sem roteador ou estado global.
-// Trocar de aba limpa o container (content.innerHTML = "") antes de renderizar
-// o proximo caso. Isso evita duplicacao de SVGs do D3 nas etapas futuras:
-// cada render D3 deve criar seu SVG dentro do elemento recebido.
+// Cada render D3 deve criar seu SVG dentro do elemento recebido.
 
 export interface Tab {
   id: string;

@@ -11,5 +11,9 @@
   "devDependencies": {
     "typescript": "~5.9.3",
     "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.33.1-dev57.0",
+    "xlsx": "^0.18.5"
   }
 }

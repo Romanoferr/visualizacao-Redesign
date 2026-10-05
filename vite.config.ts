@@ -1,4 +1,8 @@
 import { defineConfig } from "vite";
 
-// Configuracao minima e padrao do Vite. Sem customizacoes desnecessarias.
-export default defineConfig({});
+// MVP do DuckDB dispensa COOP/COEP. Excluímos o wasm do pre-bundle
+// e garantimos que .xlsx seja servido como asset (fetch no browser).
+export default defineConfig({
+  assetsInclude: ["**/*.xlsx"],
+  optimizeDeps: { exclude: ["@duckdb/duckdb-wasm"] },
+});

@@ -8,7 +8,7 @@ import { renderDesignB1 } from "./DesignB.ts";
 
 export function renderCase1(container: HTMLElement): void {
   const title = document.createElement("h2");
-  title.textContent = "Caso 1";
+  title.textContent = "Caso 1 – PIB (GDP) por país";
   container.appendChild(title);
 
   const original = document.createElement("section");

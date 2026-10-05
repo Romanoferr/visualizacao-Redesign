@@ -1,17 +1,10 @@
-// Tabela de prova do DuckDB — renderiza o resultado do SELECT do Caso 1.
+// Tabela de prova do DuckDB - renderiza o resultado do SELECT do Caso 1 (GDP).
 // Mostra estado de carregamento, erro (se houver) e a query executada.
 import { CASE1_SQL, loadCase1ViaDuckDB } from "./case1-data.ts";
 
-function fmtPct(v: number): string {
-  if (!Number.isFinite(v)) return "—";
-  const sign = v > 0 ? "+" : "";
-  return `${sign}${(v * 100).toFixed(0)}%`;
-}
-
-function fmtDelta(v: number): string {
-  if (!Number.isFinite(v)) return "—";
-  const sign = v > 0 ? "+" : "";
-  return `${sign}${Math.round(v * 100)}`;
+function fmtTn(v: number): string {
+  if (!Number.isFinite(v)) return "-";
+  return `${v.toFixed(2)} tn`;
 }
 
 export function renderDataTable1(target: HTMLElement): void {
@@ -27,23 +20,25 @@ export function renderDataTable1(target: HTMLElement): void {
       table.innerHTML = `
         <thead>
           <tr>
-            <th>Group</th>
-            <th>Feb 2025</th>
-            <th>Feb 2026</th>
-            <th>Net Δ (pt)</th>
-            <th>Valid. (2026−2025)</th>
+            <th>#</th>
+            <th>País</th>
+            <th>Cód.</th>
+            <th>PIB (USD tn)</th>
+            <th>Ano</th>
+            <th>Valid. rank</th>
           </tr>
         </thead>
         <tbody>
           ${rows
             .map((r) => {
-              const ok = Math.abs(r.net_change - r.computed_change) < 0.005;
+              const ok = r.rank === Number(r.computed_rank);
               return `<tr>
-                <td>${r.group}</td>
-                <td class="num">${fmtPct(r.y2025)}</td>
-                <td class="num">${fmtPct(r.y2026)}</td>
-                <td class="num">${fmtDelta(r.net_change)}</td>
-                <td class="num" title="Calculado pelo DuckDB">${fmtDelta(r.computed_change)} ${ok ? "✓" : "⚠"}</td>
+                <td class="num">${r.rank}</td>
+                <td>${r.country}</td>
+                <td>${r.code}</td>
+                <td class="num">${fmtTn(r.value_tn)}</td>
+                <td class="num">${r.year}</td>
+                <td class="num" title="Recalculado pelo DuckDB (ROW_NUMBER por value DESC)">${r.computed_rank} ${ok ? "✓" : "⚠"}</td>
               </tr>`;
             })
             .join("")}
@@ -51,14 +46,17 @@ export function renderDataTable1(target: HTMLElement): void {
       `;
       target.innerHTML = `
         <h3>Dados (via DuckDB)</h3>
-        <p class="duck-ok">✓ ${rows.length} linhas consultadas via DuckDB (tabela <code>case1_approval</code>).</p>
+        <p class="duck-ok">✓ ${rows.length} países lidos do Excel e consultados via DuckDB (tabela <code>case1_gdp</code>).</p>
         <p class="placeholder">SQL executado: <code>${CASE1_SQL.replace(/</g, "&lt;")}</code></p>
       `;
-      target.appendChild(table);
+      const wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      wrap.appendChild(table);
+      target.appendChild(wrap);
       const note = document.createElement("p");
       note.className = "placeholder";
       note.textContent =
-        "Fonte: MM 2026 W09 Trump Approval Ratings.xlsx — coluna Valid. recalculada no SQL para provar que o DuckDB está consultando de verdade.";
+        "Fonte: IMF_GDP.xlsx - coluna Valid. rank recalculada no SQL para provar que o DuckDB está consultando de verdade.";
       target.appendChild(note);
     })
     .catch((err) => {

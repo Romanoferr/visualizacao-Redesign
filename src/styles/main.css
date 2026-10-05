@@ -78,7 +78,7 @@ body {
   color: var(--muted);
 }
 
-/* Imagem original — ocupa o máximo da coluna do caso. */
+/* Imagem original - ocupa o máximo da coluna do caso. */
 .original-img {
   display: block;
   width: 100%;
@@ -119,4 +119,17 @@ body {
 
 .duck-err {
   color: #b42318;
+}
+
+/* 192 países: rolagem interna em vez de página infinita. */
+.table-wrap {
+  max-height: 480px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
 }

@@ -1,4 +1,4 @@
-// Util reutilizável do DuckDB (browser) — singleton compartilhado pelas 3 abas.
+// Util reutilizável do DuckDB (browser) - singleton compartilhado pelas 3 abas.
 //
 // Uso por qualquer caso:
 //   import { queryRows, execute, registerTableFromObjects } from "../../utils/duckdb.ts";

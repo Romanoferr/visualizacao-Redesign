@@ -47,7 +47,7 @@ Regras:
 2. Edite **só** os arquivos do seu caso. Não mexa nos outros casos nem no `Tabs.ts`.
 3. Substitua o `innerHTML` placeholder pelo seu gráfico D3.
 4. Crie o SVG sempre **dentro** do elemento recebido (`target`). A troca de aba
-   faz `content.innerHTML = ""`, então não há SVG residual — mas só se você
+   faz `content.innerHTML = ""`, então não há SVG residual - mas só se você
    não desenhar fora do `target`.
 5. Coloque CSV/JSON reais em `src/cases/case-N/data/`.
 
@@ -56,7 +56,7 @@ Regras:
 
 DuckDB real no browser via `@duckdb/duckdb-wasm` (bundle MVP, sem COOP/COEP).
 
-* `src/utils/duckdb.ts` - reutilizável: `getConnection()`, `execute(sql)`, `queryRows<T>(sql)` e `registerTableFromObjects(tabela, linhas, colunas)`. Cada caso usa sua própria tabela (ex: `case1_approval`).
+* `src/utils/duckdb.ts` - reutilizável: `getConnection()`, `execute(sql)`, `queryRows<T>(sql)` e `registerTableFromObjects(tabela, linhas, colunas)`. Cada caso usa sua própria tabela (ex: `case1_gdp`).
 * `src/cases/case-1/case1-data.ts` - baixa o `.xlsx` (servido pelo Vite), parseia com `xlsx`.
 * `src/cases/case-1/DataTable.ts` - renderiza a tabela na aba do caso a partir do resultado do SQL, provando que o DuckDB está consultando de verdade.
 

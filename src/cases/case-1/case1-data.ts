@@ -1,4 +1,4 @@
-// Caso 1 (GDP) - carga do Excel via DuckDB (prova de funcionamento).
+// Caso 1 (GDP) — carga do Excel via DuckDB (prova de funcionamento).
 //
 // Fonte: src/cases/case-1/data/IMF_GDP.xlsx (aba "IMF GDP", 192 países + header)
 // Colunas: rank | code | country | value (USD) | year
@@ -29,10 +29,26 @@ FROM "${CASE1_TABLE}"
 ORDER BY rank`;
 
 let cache: Case1Row[] | null = null;
+// Promise em voo compartilhada: DataTable e DesignA montam juntos e chamam
+// o loader ao mesmo tempo. Sem isso, duas cargas intercalam DROP/CREATE
+// e a segunda falha com "Table already exists".
+let pending: Promise<Case1Row[]> | null = null;
 
 export async function loadCase1ViaDuckDB(): Promise<Case1Row[]> {
   if (cache) return cache;
+  if (!pending) pending = loadUncached();
+  try {
+    const rows = await pending;
+    cache = rows;
+    return rows;
+  } catch (err) {
+    // A carga falhou: libera para uma nova tentativa na próxima chamada.
+    pending = null;
+    throw err;
+  }
+}
 
+async function loadUncached(): Promise<Case1Row[]> {
   // 1. Baixa o Excel servido pelo Vite e parseia com SheetJS.
   const res = await fetch(xlsxUrl);
   if (!res.ok) throw new Error(`Falha ao buscar Excel: ${res.status}`);
@@ -69,7 +85,25 @@ export async function loadCase1ViaDuckDB(): Promise<Case1Row[]> {
   );
 
   // 4. Consulta real via SQL (validação: rank confere com ordenação por value?).
-  const rows = await queryRows<Case1Row>(CASE1_SQL);
-  cache = rows;
-  return rows;
+  return queryRows<Case1Row>(CASE1_SQL);
+}
+
+// SQL do Design A: o Top 20 é selecionado DENTRO do DuckDB
+// (ORDER BY + LIMIT). É dessa consulta
+// que a visualização é montada.
+export const CASE1_TOP20_SQL = `SELECT
+  rank,
+  code,
+  country,
+  value,
+  year,
+  (value / 1e12) AS value_tn
+FROM "${CASE1_TABLE}"
+ORDER BY value DESC
+LIMIT 20`;
+
+// Garante a tabela carregada e retorna só o Top 20 direto do DuckDB.
+export async function queryTop20ViaDuckDB(): Promise<Case1Row[]> {
+  await loadCase1ViaDuckDB();
+  return queryRows<Case1Row>(CASE1_TOP20_SQL);
 }

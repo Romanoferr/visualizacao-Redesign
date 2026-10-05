@@ -54,7 +54,7 @@ Regras:
 
 ## DuckDB
 
-DuckDB real no browser via `@duckdb/duckdb-wasm` (bundle MVP, sem COOP/COEP).
+DuckDB real no browser via `@duckdb/duckdb-wasm` (bundle EH, sem COOP/COEP; requer browser moderno).
 
 * `src/utils/duckdb.ts` - reutilizável: `getConnection()`, `execute(sql)`, `queryRows<T>(sql)` e `registerTableFromObjects(tabela, linhas, colunas)`. Cada caso usa sua própria tabela (ex: `case1_gdp`).
 * `src/cases/case-1/case1-data.ts` - baixa o `.xlsx` (servido pelo Vite), parseia com `xlsx`.

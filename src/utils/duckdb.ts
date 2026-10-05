@@ -5,10 +5,15 @@
 //   await registerTableFromObjects("minha_tabela", [{a: 1}], [{name:"a", type:"DOUBLE"}]);
 //   const rows = await queryRows<{a:number}>(`SELECT * FROM minha_tabela`);
 //
-// Usa o bundle MVP (sem SharedArrayBuffer), então NÃO exige headers COOP/COEP.
+// Usa o bundle EH (sem SharedArrayBuffer), então NÃO exige headers COOP/COEP.
+// Requer browser moderno com Wasm EH + SIMD (Chrome/Edge 95+, Firefox 131+).
+// NOTA: o bundle MVP da linha 1.33.1-devXX está quebrado (o worker referencia
+// `_setThrew` sem defini-lo e toda query falha) — por isso usamos o EH.
 import * as duckdb from "@duckdb/duckdb-wasm";
-import duckdbWasmUrl from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
+import duckdbMvpWasmUrl from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
 import mvpWorkerUrl from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
+import duckdbEhWasmUrl from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
+import ehWorkerUrl from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
 
 let dbPromise: Promise<duckdb.AsyncDuckDB> | null = null;
 let connPromise: Promise<duckdb.AsyncDuckDBConnection> | null = null;
@@ -18,10 +23,16 @@ async function getDB(): Promise<duckdb.AsyncDuckDB> {
     dbPromise = (async () => {
       const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
         mvp: {
-          mainModule: duckdbWasmUrl,
+          mainModule: duckdbMvpWasmUrl,
           mainWorker: mvpWorkerUrl,
         },
+        eh: {
+          mainModule: duckdbEhWasmUrl,
+          mainWorker: ehWorkerUrl,
+        },
       };
+      // selectBundle escolhe EH em browser moderno (Wasm EH + SIMD) e só
+      // cairia no MVP em browser muito antigo.
       const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
       const worker = new Worker(bundle.mainWorker!, { type: "module" });
       const logger = new duckdb.ConsoleLogger();
@@ -72,8 +83,10 @@ function escapeValue(v: unknown): string {
   return `'${String(v).replace(/'/g, "''")}'`;
 }
 
-// Apaga (se existir), cria e popula uma tabela a partir de objetos JS.
-// Reutilizável: cada caso chama com seu próprio nome de tabela.
+// Recria (atomicamente) e popula uma tabela a partir de objetos JS.
+// CREATE OR REPLACE evita a janela de corrida do par DROP + CREATE:
+// duas cargas concorrentes da mesma tabela não falham mais com
+// "Table already exists". Reutilizável: cada caso usa sua própria tabela.
 export async function registerTableFromObjects(
   table: string,
   rows: Array<Record<string, unknown>>,
@@ -81,9 +94,8 @@ export async function registerTableFromObjects(
 ): Promise<void> {
   const conn = await getConnection();
   const t = escapeIdent(table);
-  await conn.query(`DROP TABLE IF EXISTS ${t}`);
   const ddl = columns.map((c) => `${escapeIdent(c.name)} ${c.type}`).join(", ");
-  await conn.query(`CREATE TABLE ${t} (${ddl})`);
+  await conn.query(`CREATE OR REPLACE TABLE ${t} (${ddl})`);
   // Insert em lotes para não estourar o tamanho da query.
   const BATCH = 200;
   for (let i = 0; i < rows.length; i += BATCH) {

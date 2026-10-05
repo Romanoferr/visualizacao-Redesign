@@ -88,6 +88,17 @@ body {
   background: #fff;
 }
 
+/* Duas imagens originais lado a lado (caso 2). */
+.original-pair {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.original-pair .original-img {
+  flex: 1 1 260px;
+}
+
 /* Tabela de prova do DuckDB. */
 .data-table {
   width: 100%;

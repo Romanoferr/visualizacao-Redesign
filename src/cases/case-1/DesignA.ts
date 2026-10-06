@@ -1,19 +1,10 @@
 // Design A - Caso 1 (GDP): dot plot horizontal com D3.js.
 //
-// Pipeline explícito (tudo passa pelo DuckDB):
-//   1. Excel -> tabela `case1_gdp` no DuckDB (carga, via loadCase1ViaDuckDB)
-//   2. Top 20 via SQL (ORDER BY value DESC LIMIT 20)
-//   3. D3 desenha 1 círculo por linha RETORNADA pelo DuckDB
-//
-// Dado: GDP (quantitativo)  →  Atributo quantitativo
 // Marcador: circle (1 país = 1 círculo, tamanho e cor constantes)
 // Canal principal: posição horizontal (X) via d3.scaleLinear()
-// Posição vertical: apenas separa os países (ordem do ranking) via d3.scaleBand()
-// Tarefa: comparar GDP entre países e identificar rapidamente os maiores valores.
 
 import * as d3 from "d3";
 import {
-  CASE1_TABLE,
   queryTop20ViaDuckDB,
   type Case1Row,
 } from "./case1-data.ts";
@@ -29,7 +20,6 @@ export function renderDesignA1(target: HTMLElement): void {
   target.innerHTML = `
     <h3>Design A - Top 20 Países por PIB (dot plot)</h3>
     <p class="placeholder">20 de 192 países · cada país = 1 ponto</p>
-    <p class="placeholder">Fonte dos pontos: consulta SQL no DuckDB (tabela <code>${CASE1_TABLE}</code>).</p>
     <div class="chart-wrap"></div>
   `;
   const wrap = target.querySelector<HTMLElement>(".chart-wrap");

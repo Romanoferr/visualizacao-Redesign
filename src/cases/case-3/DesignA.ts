@@ -1,20 +1,14 @@
-// Esse design requisitou um arquivo separado de estilos (DesignA.css),
-// para manter a visualização mais organizada.
-
 import * as d3 from "d3";
-import "./DesignA.css";
 import { loadCase3 } from "./case3-data.ts";
 
-// Representa o tipo de uma linha do conjunto de dados
+// Representa uma linha do conjunto de dados
 type OilRecord = Awaited<ReturnType<typeof loadCase3>>[number];
 
 // Gera a visualização Design A: pequenos múltiplos.
-// Cada país possui seu próprio gráfico de linha, facilitando
-// a análise individual e reduzindo a sobreposição das séries.
+// Cada país possui seu próprio gráfico de produção ao longo do tempo.
 export function renderDesignA3(target: HTMLElement): void {
-
   target.innerHTML = `
-    <h3>Design A — Produção de petróleo por país</h3>
+    <h3>Design A — Evolução no Tempo</h3>
 
     <p class="placeholder">
       Série histórica em TWh. Cada país possui uma escala vertical própria.
@@ -27,22 +21,64 @@ export function renderDesignA3(target: HTMLElement): void {
     <div class="chart-wrapper"></div>
   `;
 
-  const charts = target.querySelector(".chart-wrapper") as HTMLDivElement;
-  const toggle = target.querySelector(".scale-toggle") as HTMLButtonElement;
+  const charts = target.querySelector(
+    ".chart-wrapper",
+  ) as HTMLDivElement;
 
-  // false: cada país usa sua própria escala vertical
-  // true: todos os países usam a mesma escala vertical
+  const toggle = target.querySelector(
+    ".scale-toggle",
+  ) as HTMLButtonElement;
+
+  // Aplica os estilos gerais da visualização
+  d3.select(target)
+    .style("font-family", "Arial, sans-serif")
+    .style("color", "#333");
+
+  // Configura a aparência do título
+  d3.select(target)
+    .select("h3")
+    .style("margin", "0 0 8px")
+    .style("font-size", "22px")
+    .style("font-weight", "600");
+
+  // Configura o texto explicativo
+  d3.select(target)
+    .select(".placeholder")
+    .style("margin", "0 0 16px")
+    .style("color", "#666")
+    .style("font-size", "14px");
+
+  // Configura o botão de alternância de escalas
+  d3.select(toggle)
+    .style("margin-bottom", "16px")
+    .style("padding", "8px 12px")
+    .style("border", "1px solid #ccc")
+    .style("border-radius", "6px")
+    .style("background", "#fff")
+    .style("color", "#333")
+    .style("font-size", "13px")
+    .style("cursor", "pointer");
+
+  // Cria duas colunas quando houver espaço suficiente
+  // auto-fit adapta a quantidade de colunas à largura disponível
+  d3.select(charts)
+    .style("display", "grid")
+    .style("grid-template-columns", "repeat(auto-fit, minmax(min(100%, 420px), 1fr))")
+    .style("gap", "20px")
+    .style("width", "100%");
+
+  // false: cada país possui sua própria escala vertical
+  // true: todos os países compartilham a mesma escala vertical
   let commonScale = false;
 
   loadCase3()
     .then((rows) => {
-      // Tratar falta de dados no arquivo
       if (rows.length === 0) {
         charts.textContent = "Nenhum dado disponível.";
         return;
       }
 
-      // Agrupa os registros pelo nome do país
+      // Agrupa os registros por país
       const countries = d3
         .groups(rows, (row) => row.entity)
         .map(([entity, values]) => ({
@@ -54,7 +90,6 @@ export function renderDesignA3(target: HTMLElement): void {
       // para ser utilizado na escala comum
       const globalMax = d3.max(rows, (row) => row.oil) ?? 1;
 
-      // Descobre o primeiro e o último ano do conjunto de dados
       const minYear = d3.min(rows, (row) => row.year) ?? 1900;
       const maxYear = d3.max(rows, (row) => row.year) ?? 2024;
 
@@ -65,23 +100,35 @@ export function renderDesignA3(target: HTMLElement): void {
         .range(d3.schemeTableau10);
 
       function draw(): void {
-        charts.innerHTML = "";
+        charts.replaceChildren();
 
-        // Cria um pequeno gráfico para cada país.
         countries.forEach(({ entity, values }) => {
+          // Cria um cartão para o país
           const card = document.createElement("section");
           card.className = "chart-card";
 
-          const last = values[values.length - 1];
+          d3.select(card)
+            .style("position", "relative")
+            .style("min-width", "0")
+            .style("padding", "16px")
+            .style("border", "1px solid #ddd")
+            .style("border-radius", "10px")
+            .style("background", "#fff");
+
           const heading = document.createElement("h4");
           heading.textContent = entity;
 
-          card.append(heading);
+          d3.select(heading)
+            .style("margin", "0 0 6px")
+            .style("font-size", "18px")
+            .style("font-weight", "600");
+
+          card.appendChild(heading);
           charts.appendChild(card);
 
-          // Definir dimensões
           const width = 560;
           const height = 260;
+
           const margin = {
             top: 15,
             right: 20,
@@ -89,7 +136,6 @@ export function renderDesignA3(target: HTMLElement): void {
             left: 55,
           };
 
-          // Calcular a área interna disponível para desenhar os dados
           const innerWidth = width - margin.left - margin.right;
           const innerHeight = height - margin.top - margin.bottom;
 
@@ -101,7 +147,7 @@ export function renderDesignA3(target: HTMLElement): void {
 
           const localMax = d3.max(values, (row) => row.oil) ?? 1;
 
-          // Escala vertical
+          // Define a escala vertical
           const y = d3
             .scaleLinear()
             .domain([
@@ -111,52 +157,95 @@ export function renderDesignA3(target: HTMLElement): void {
             .nice()
             .range([innerHeight, 0]);
 
-          // Criar área do gráfico
-          const area = d3
+          // Cria o SVG
+          const svg = d3
             .select(card)
             .append("svg")
             .attr("viewBox", `0 0 ${width} ${height}`)
             .attr("width", "100%")
             .attr("role", "img")
+            .attr(
+              "aria-label",
+              `Evolução da produção de petróleo de ${entity}`,
+            )
+            .style("display", "block")
+            .style("width", "100%")
+            .style("height", "auto");
 
-          const g = area
+          // Cria o grupo principal do gráfico
+          const g = svg
             .append("g")
             .attr(
               "transform",
               `translate(${margin.left}, ${margin.top})`,
             );
 
-          // Desenha as linhas horizontais da grade
-          g.append("g")
+          // Grade horizontal
+          const grid = g
+            .append("g")
             .attr("class", "grid")
             .call(
-              d3.axisLeft(y).ticks(4).tickSize(-innerWidth).tickFormat(() => ""),
+              d3.axisLeft(y)
+                .ticks(4)
+                .tickSize(-innerWidth)
+                .tickFormat(() => ""),
             );
 
-          // Desenha o eixo Y
-          g.append("g")
+          // LInhas de grade
+          grid.select(".domain").remove();
+
+          grid.selectAll("line")
+            .style("stroke", "#e5e7eb")
+            .style("stroke-dasharray", "3 3");
+
+          // Eixo vertical
+          const yAxis = g
+            .append("g")
             .attr("class", "axis")
             .call(
-              d3.axisLeft(y).ticks(4).tickFormat(
-                (value) => d3.format("~s")(Number(value))
-              ),
+              d3.axisLeft(y)
+                .ticks(4)
+                .tickFormat((value) => d3.format("~s")(Number(value))),
             );
 
-          // Desenha o eixo X
-          g.append("g")
+          yAxis.select(".domain")
+            .style("stroke", "#ccc");
+
+          yAxis.selectAll("line")
+            .style("stroke", "#ccc");
+
+          yAxis.selectAll("text")
+            .style("font-size", "11px")
+            .style("fill", "#555");
+
+          // Eixo horizontal
+          const xAxis = g
+            .append("g")
             .attr("class", "axis")
             .attr("transform", `translate(0, ${innerHeight})`)
             .call(
-              d3.axisBottom(x).ticks(7).tickFormat(d3.format("d")),
+              d3.axisBottom(x)
+                .ticks(7)
+                .tickFormat(d3.format("d")),
             );
 
-          // Contrução das linhas
+          xAxis.select(".domain")
+            .style("stroke", "#ccc");
+
+          xAxis.selectAll("line")
+            .style("stroke", "#ccc");
+
+          xAxis.selectAll("text")
+            .style("font-size", "11px")
+            .style("fill", "#555");
+
           const line = d3
             .line<OilRecord>()
             .defined((row) => Number.isFinite(row.oil))
             .x((row) => x(row.year))
             .y((row) => y(row.oil));
 
+          // Desenha a série histórica do país
           g.append("path")
             .datum(values)
             .attr("fill", "none")
@@ -165,35 +254,48 @@ export function renderDesignA3(target: HTMLElement): void {
             .attr("stroke-linejoin", "round")
             .attr("d", line);
 
-          // Grupo de elementos para acompanhar o movimento do ponteiro
+          // Cria um grupo para a linha de referência e o marcador
           const focus = g
             .append("g")
             .style("display", "none")
             .attr("pointer-events", "none");
 
+          // Linha vertical que indica o ano selecionado
           focus.append("line")
             .attr("y1", 0)
             .attr("y2", innerHeight)
-            .attr("stroke", "#64748b")
-            .attr("stroke-dasharray", "4 4");
+            .style("stroke", "#64748b")
+            .style("stroke-dasharray", "4 4");
 
+          // Círculo que destaca o valor do ano selecionado
           focus.append("circle")
             .attr("r", 5)
             .attr("fill", colors(entity))
             .attr("stroke", "#fff")
             .attr("stroke-width", 2);
 
-          // Procura o registro cujo ano está mais próximo do ponteiro.
+          // Encontra o registro mais próximo do ano apontado
           const bisect = d3.bisector(
             (row: OilRecord) => row.year,
           ).center;
 
-          // Cria o painel de informação dentro do cartão.
+          // Cria o painel de informação do ano e da produção
           const tooltip = d3
             .select(card)
             .append("div")
             .attr("class", "tooltip")
-            .style("display", "none");
+            .style("display", "none")
+            .style("position", "absolute")
+            .style("z-index", "1")
+            .style("left", "12px")
+            .style("bottom", "12px")
+            .style("max-width", "calc(100% - 24px)")
+            .style("padding", "7px 10px")
+            .style("border-radius", "6px")
+            .style("color", "#fff")
+            .style("background", "#172033")
+            .style("font-size", "12px")
+            .style("pointer-events", "none");
 
           // Retângulo transparente para capturar os eventos do ponteiro
           g.append("rect")
@@ -202,32 +304,31 @@ export function renderDesignA3(target: HTMLElement): void {
             .attr("fill", "transparent")
             .style("cursor", "crosshair")
 
-            // Mostra a linha de referência e o tooltip ao entrar no gráfico.
+            // Mostra os elementos de destaque ao entrar no gráfico
             .on("pointerenter", () => {
               focus.style("display", null);
               tooltip.style("display", "block");
             })
 
+            // Esconde os elementos de destaque ao sair do gráfico
             .on("pointerleave", () => {
               focus.style("display", "none");
               tooltip.style("display", "none");
             })
 
-            // Atualiza as informações enquanto o ponteiro se movimenta.
+            // Atualiza o destaque conforme o ponteiro se movimenta
             .on("pointermove", (event: PointerEvent) => {
-              const [mouseX] = d3.pointer(event);
+              const [mouseX] = d3.pointer(event, g.node());
               const year = x.invert(mouseX);
               const index = bisect(values, year);
               const row = values[index];
 
               if (!row) return;
 
-              // Posiciona a linha vertical no ano do registro encontrado
               focus.select("line")
                 .attr("x1", x(row.year))
                 .attr("x2", x(row.year));
 
-              // Move o marcador até a posição da produção daquele ano
               focus.select("circle")
                 .attr("cx", x(row.year))
                 .attr("cy", y(row.oil));
@@ -239,7 +340,7 @@ export function renderDesignA3(target: HTMLElement): void {
         });
       }
 
-      // Alterna entre escalas individuais e escala vertical comum
+      // Alterna entre escalas individuais e escala comum.
       toggle.addEventListener("click", () => {
         commonScale = !commonScale;
 
@@ -253,7 +354,7 @@ export function renderDesignA3(target: HTMLElement): void {
       draw();
     })
 
-    // Registra o erro para facilitar a investigação durante o desenvolvimento
+    // Tratativa de erros
     .catch((error: unknown) => {
       console.error("Erro ao carregar produção de petróleo:", error);
       charts.textContent = "Não foi possível carregar os dados.";

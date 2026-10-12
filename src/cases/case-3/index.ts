@@ -5,7 +5,7 @@ import { renderDesignB3 } from "./DesignB.ts";
 
 export function renderCase3(container: HTMLElement): void {
   const title = document.createElement("h2");
-  title.textContent = "Caso 3";
+  title.textContent = "Caso 3 - Produção de petróleo por país";
   container.appendChild(title);
 
   const original = document.createElement("section");

@@ -22,5 +22,5 @@ export function renderCase3(container: HTMLElement): void {
   renderOriginal3(original);
   renderDesignA3(designA);
   renderDesignB3(designB);
-  renderDataTable3(data_validation);
+  //renderDataTable3(data_validation);
 }

@@ -8,7 +8,7 @@ type OilRecord = Awaited<ReturnType<typeof loadCase3>>[number];
 // Cada país possui seu próprio gráfico de produção ao longo do tempo.
 export function renderDesignA3(target: HTMLElement): void {
   target.innerHTML = `
-    <h3>Design A — Evolução no Tempo</h3>
+    <h3>Design A - Evolução no Tempo</h3>
 
     <p class="placeholder">
       Série histórica em TWh. Cada país possui uma escala vertical própria.

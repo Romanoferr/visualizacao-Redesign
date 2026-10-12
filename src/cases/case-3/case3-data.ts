@@ -20,7 +20,7 @@ ORDER BY year`;
 let cache: Case3Row[] | null = null;
 
 function parseCsv(text: string): Record<string, string>[] {
-  const linhas = text.trim().split("\n");
+  const linhas = text.trim().split(/\r?\n/);
 
   const header = linhas[0].split(",");
 

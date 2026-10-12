@@ -22,7 +22,7 @@ export function renderCase1(container: HTMLElement): void {
   container.append(original, data, designA, designB);
 
   renderOriginal1(original);
-  // renderDataTable1(data);
   renderDesignA1(designA);
   renderDesignB1(designB);
+   // renderDataTable1(data);
 }

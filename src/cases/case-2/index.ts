@@ -20,7 +20,7 @@ export function renderCase2(container: HTMLElement): void {
   container.append(original, data, designA, designB);
 
   renderOriginal2(original);
-  renderDataTable2(data);
   renderDesignA2(designA);
   renderDesignB2(designB);
+  // renderDataTable2(data);
 }

@@ -1,7 +1,8 @@
-# Visualização de Dados - Redesigns com D3.js
+# Visualização de Dados — Redesigns com D3.js
 
-Base mínima (Vite + TypeScript) com 3 casos de estudo em uma única aplicação com abas.
-Cada caso tem espaço para Visualização Original, Design A e Design B.
+Trabalho que analisa três visualizações publicadas e propõe, para cada uma, dois redesigns em D3.js que comunicam melhor o insight que o original pretendia transmitir. O foco não é a estética, e sim a adequação entre dados, tarefa e codificação visual.
+
+Grupo: Antonio Romano Ferreira, Rafael Langsch, Karine Vitória.
 
 ## Como rodar
 
@@ -12,51 +13,50 @@ npm install
 npm run dev      # servidor local (http://localhost:5173)
 ```
 
-## Estrutura
+Requer browser moderno com Wasm EH + SIMD (Chrome/Edge 95+, Firefox 131+). O bundle EH do DuckDB dispensa headers COOP/COEP.
+
+## Os três casos
+
+Uma aba por caso; cada aba mostra o original, o Design A e o Design B.
+
+| Caso | Tema | Fonte | Dado |
+|-----|------|-------|------|
+| 1 | PIB por país (FMI) | Makeover Monday 2026 W34 — Global GDP Ranks | 192 países × PIB nominal (US$) |
+| 2 | Imigração nos EUA | Junk Charts — Mirror images | Série decenal 1850–2024, % de imigrantes |
+| 3 | Produção de petróleo por país | Makeover Monday 2026 W14 | Séries anuais 1900–2024 por país, em TWh (875 registros) |
+
+## Arquitetura
+
+Vite + TypeScript, D3.js v7 para todas as visualizações, DuckDB-wasm para carregar, transformar e validar os dados no navegador. Nenhuma biblioteca de visualização de alto nível; a única dependência extra é o `xlsx`, que apenas lê a planilha do Caso 1.
+
+| Camada | Arquivo(s) | Papel |
+|--------|-----------|-------|
+| Navegação | `src/main.ts`, `src/components/Tabs.ts` | Uma aba por caso; a troca de aba limpa o container antes de renderizar |
+| Acesso a dados | `src/utils/duckdb.ts` | Inicializa o DuckDB-wasm e expõe `registerTableFromObjects` e `queryRows` |
+| Carga por caso | `src/cases/case-N/caseN-data.ts` | Lê o arquivo bruto (CSV/XLSX), cria uma tabela no DuckDB e devolve o resultado de uma consulta SQL |
+| Visualizações | `Original.ts`, `DesignA.ts`, `DesignB.ts` | Cada arquivo exporta uma função que desenha seu SVG dentro do elemento recebido |
+| Validação | `DataTable.ts` | Exibe o resultado do SQL em tabela, para conferir os dados usados nos gráficos |
 
 ```text
 src/
-├── main.ts      
+├── main.ts
 ├── components/Tabs.ts    # troca de abas (limpa o container a cada troca)
 ├── cases/
-│   ├── case-1/index.ts, Original.ts, DesignA.ts, DesignB.ts, data/
+│   ├── case-1/index.ts, Original.ts, DesignA.ts, DesignB.ts, case1-data.ts, DataTable.ts, data/
 │   ├── case-2/...        # independente dos demais
 │   └── case-3/...        # independente dos demais
 ├── styles/main.css
-└── utils/duckdb-extension.ts
+└── utils/duckdb.ts
 ```
 
-## Como implementar uma visualização
+Contrato de cada gráfico: uma única função que recebe um elemento **vazio** e renderiza dentro dele (o SVG sempre dentro do `target`, nunca fora). Cada caso é um módulo independente — edite só os arquivos do seu caso, sem mexer nos outros nem no `Tabs.ts`. CSV/XLSX reais ficam em `src/cases/case-N/data/`.
 
-Cada arquivo de gráfico (`Original.ts`, `DesignA.ts`, `DesignB.ts`) exporta
-uma única função que recebe um elemento **vazio** e renderiza dentro dele:
+## Uso do DuckDB
 
-```ts
-// src/cases/case-1/DesignA.ts
-export function renderDesignA1(target: HTMLElement): void {
-  target.innerHTML = `<h3>Design A</h3>`;
-  const div = document.createElement("div");
-  target.appendChild(div);
-  // Código D3 futuro aqui, criando o SVG dentro de `div`.
-}
-```
+DuckDB real no browser via `@duckdb/duckdb-wasm`. Não é só um repositório: parte da transformação que alimenta os gráficos acontece em SQL.
 
-Regras:
+- **Caso 1:** `ROW_NUMBER() OVER (ORDER BY value DESC)` recalcula o ranking, converte o valor para trilhões (`value / 1e12`) e o Top 20 é selecionado em SQL (`ORDER BY value DESC LIMIT 20`).
+- **Caso 2:** `pct_imigrantes - LAG(pct_imigrantes) OVER (ORDER BY ano)` calcula a variação entre décadas usada no Design B.
+- **Caso 3:** a tabela é consultada ordenada por ano; o código verifica registros duplicados por país e ano antes de calcular o ranking do Design B.
 
-1. Entre no `index.ts` do seu caso - é ele que chama as 3 funções render.
-2. Edite **só** os arquivos do seu caso. Não mexa nos outros casos nem no `Tabs.ts`.
-3. Substitua o `innerHTML` placeholder pelo seu gráfico D3.
-4. Crie o SVG sempre **dentro** do elemento recebido (`target`). A troca de aba
-   faz `content.innerHTML = ""`, então não há SVG residual - mas só se você
-   não desenhar fora do `target`.
-5. Coloque CSV/JSON reais em `src/cases/case-N/data/`.
-
-
-## DuckDB
-
-DuckDB real no browser via `@duckdb/duckdb-wasm` (bundle EH, sem COOP/COEP; requer browser moderno).
-
-* `src/utils/duckdb.ts` - reutilizável: `getConnection()`, `execute(sql)`, `queryRows<T>(sql)` e `registerTableFromObjects(tabela, linhas, colunas)`. Cada caso usa sua própria tabela (ex: `case1_gdp`).
-* `src/cases/case-1/case1-data.ts` - baixa o `.xlsx` (servido pelo Vite), parseia com `xlsx`.
-* `src/cases/case-1/DataTable.ts` - renderiza a tabela na aba do caso a partir do resultado do SQL, provando que o DuckDB está consultando de verdade.
-
+`src/utils/duckdb.ts` é reutilizável (`getConnection()`, `execute(sql)`, `queryRows<T>(sql)`, `registerTableFromObjects(tabela, linhas, colunas)`) e cada caso usa sua própria tabela (`case1_gdp`, `case2_imigracao`, `case3_oil_production`).
